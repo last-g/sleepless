@@ -18,9 +18,7 @@ class SleeplessSupervisor extends Actor {
   }
 }
 
-object Sleepless {
-  def main(args: Array[String]) {
+object Sleepless extends App {
     System.out.println("Hello, Sleepless one!")
     akka.Main.main(Array(classOf[SleeplessSupervisor].getName))
-  }
 }

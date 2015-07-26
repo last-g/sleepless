@@ -35,10 +35,9 @@ class VkHttpSource extends Actor {
 }
 
 class VkHttpWatcher(id: VkAccountId) extends Actor {
-  val browser = new Browser()
-
   implicit val execContext = context.system.dispatcher
   val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
+  val browser = new Browser()
 
   override def receive: Actor.Receive = {
     case UpdateData => {
