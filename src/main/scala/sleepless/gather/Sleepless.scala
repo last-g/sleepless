@@ -1,8 +1,7 @@
 package sleepless.gather
 
 import akka.actor.{Props, Actor}
-import sleepless.gather.sources.{UpdateData, SensorProbe, VkAccountId, VkHttpWatcher}
-
+import sleepless.gather.sources.vk_http.{VkHttpWatcher, UpdateData, VkAccountId}
 
 class SleeplessSupervisor extends Actor {
   override def preStart() = {
