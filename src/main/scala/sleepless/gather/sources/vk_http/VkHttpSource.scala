@@ -37,7 +37,9 @@ class VkHttpWatcher(id: VkAccountId) extends Actor with ActorLogging{
 
           log.info(s"Got status from $id: $lastActivityString")
 
-          snd ! SensorProbe("VkHttp", id.id, ZonedDateTime.now(), BooleanData(VkHttpWatcher.parseLastActivity(lastActivityString)))
+          val probe = SensorProbe("VkHttp", id.id, ZonedDateTime.now(), BooleanData(VkHttpWatcher.parseLastActivity(lastActivityString)))
+
+          context.system.eventStream.publish(probe)
         }
         case Failure(err) => println(s"Some failure $err")
       })
