@@ -1,28 +1,18 @@
 package sleepless.gather
 
 import akka.actor.{ActorSystem, Props, Actor}
-import sleepless.gather.sources.vk_http.{VkHttpWatcher, UpdateData, VkAccountId}
+import sleepless.gather.sources.vk_http.{VkUserId, VkHttpSupervisor}
 import concurrent.duration._
 
-class SleeplessSupervisor extends Actor {
-
-  import context.dispatcher
-
-  override def preStart() = {
-    val simple = context.actorOf(Props(classOf[VkHttpWatcher], VkAccountId("dm")))
-    context.system.scheduler.schedule(0.seconds, 5.seconds, simple, UpdateData)
-  }
-
-  override def receive: Receive = {
-    case data: SensorProbe => {
-      println(s"Answer is ${data}")
-    }
-  }
-}
-
 object Sleepless extends App {
-    System.out.println("Hello, Sleepless one!")
-    val system = ActorSystem("system")
-    system.actorOf(Props[SleeplessSupervisor])
-    system.actorOf(Props[CsvWriter])
+  val system = ActorSystem("system")
+
+  val users = Seq("dm", "kate_clapp", "daniilova_anya", "adam_moran").map(VkUserId)
+
+  val vkSupervisor = system.actorOf(VkHttpSupervisor.props)
+
+  val csvWriter = system.actorOf(CsvWriter.props)
+
+  users.foreach(vkSupervisor ! VkHttpSupervisor.Commands.AddNewUser(_))
+
 }

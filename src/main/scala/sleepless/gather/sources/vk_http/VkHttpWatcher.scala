@@ -3,53 +3,46 @@ package sleepless.gather.sources.vk_http
 import java.time.ZonedDateTime
 
 import akka.actor._
-import net.ruippeixotog.scalascraper.browser.Browser
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL._
+import sleepless.gather.sources.vk_http.VkHttpWatcher.Commands
 import sleepless.gather.{BooleanData, SensorProbe}
-import spray.client.pipelining._
-import spray.http._
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util._
 
-final case class VkAccountId(id:String)
 
-case object UpdateData
+class VkHttpWatcher(id: VkUserId) extends Actor with ActorLogging with HtmlScrapping {
 
-class VkHttpWatcher(id: VkAccountId) extends Actor with ActorLogging{
-  implicit val execContext = context.system.dispatcher
-  val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
-  val browser = new Browser()
+  import context.dispatcher
 
   override def receive: Actor.Receive = {
-    case UpdateData => {
-
-      val webPage = pipeline(Get(s"https://m.vk.com/${id.id}"))
-      val snd = sender()
-
-      webPage.andThen({
-
-        case Success(resp) => {
+    case Commands.UpdateData =>
+        val webPage = getPage(s"https://m.vk.com/${id.id}")
+      webPage andThen {
+        case Success(resp) =>
           // <div class="pp_last_activity">заходил сегодня в 12:58</div>
-
           val lastActivityString = (browser.parseString(resp.entity.data.asString) >> text(".pp_last_activity"))
-
           log.info(s"Got status from $id: $lastActivityString")
 
           val probe = SensorProbe("VkHttp", id.id, ZonedDateTime.now(), BooleanData(VkHttpWatcher.parseLastActivity(lastActivityString)))
-
           context.system.eventStream.publish(probe)
-        }
-        case Failure(err) => println(s"Some failure $err")
-      })
-    }
+
+        case Failure(err) =>
+          log.warning(s"Failure during downloading user info, ${err.getMessage}", err)
+      }
+
   }
 
 }
 
-object VkHttpWatcher
-{
+object VkHttpWatcher {
+
+  def props(id: VkUserId) = Props(classOf[VkHttpWatcher], id)
+
+  object Commands {
+    object UpdateData
+  }
+
   private def parseLastActivity(activityString: String): Boolean = {
     !(activityString.contains("был") || activityString.contains("заходил"))
   }

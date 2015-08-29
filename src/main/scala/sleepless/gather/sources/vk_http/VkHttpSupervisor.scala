@@ -1,18 +1,36 @@
 package sleepless.gather.sources.vk_http
 
-import akka.actor.{Props, Actor}
-import akka.actor.Actor.Receive
+import akka.actor.{ActorRef, Props, Actor}
+import scala.concurrent.duration._
 import scala.collection.mutable
+import sleepless.gather.Constants._
 
 class VkHttpSupervisor extends Actor {
-  val watchers = mutable.Map[String, VkHttpWatcher]()
+
+  import VkHttpSupervisor._
+  import context.dispatcher
+
+  val watchers = mutable.Map.empty[VkUserId, ActorRef]
+
+  context.system.scheduler.schedule(WatcherRequestTime, WatcherRequestTime) {
+    watchers.values.foreach(_ ! VkHttpWatcher.Commands.UpdateData)
+  }
 
   override def receive: Receive = {
-    case userId:String => {
-      if (!watchers.contains(userId)) {
-        val newWatcher = context.actorOf(Props(classOf[VkHttpWatcher], VkAccountId(userId)))
-        watchers + userId -> newWatcher
-      }
-    }
+    case Commands.AddNewUser(userId) =>
+      watchers.getOrElseUpdate(userId, context.actorOf(VkHttpWatcher.props(userId)))
   }
+}
+
+
+object VkHttpSupervisor {
+
+  def props = Props[VkHttpSupervisor]
+
+  object Commands {
+
+    case class AddNewUser(vkUserId: VkUserId)
+
+  }
+
 }

@@ -2,7 +2,7 @@ package sleepless.gather
 
 import java.io.File
 
-import akka.actor.Actor
+import akka.actor._
 import com.github.tototoshi.csv._
 
 class CsvWriter extends Actor {
@@ -15,5 +15,11 @@ class CsvWriter extends Actor {
     case sp: SensorProbe =>
       val writer = CSVWriter.open(f, append = true)
       writer.writeRow(Seq(sp.sensorType, sp.sensorId, sp.timestamp, sp.data))
+      writer.close()
   }
+
+}
+
+object CsvWriter {
+  def props = Props[CsvWriter]
 }
