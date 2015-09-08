@@ -1,5 +1,7 @@
 package sleepless.gather.sources.vk_api
 
+import sleepless.gather.models.vk.User
+
 
 object Users {
 
@@ -13,6 +15,7 @@ object Users {
             "fields" -> fields.mkString(","),
             "name_case" -> nameCase
         )
+        val unmarshallTo = classOf[User]
 
     }
 
@@ -28,6 +31,7 @@ object Users {
             "count" -> count.toString,
             "fields" -> fields.mkString(",")
         )
+        val unmarshallTo = ???
     }
 
 

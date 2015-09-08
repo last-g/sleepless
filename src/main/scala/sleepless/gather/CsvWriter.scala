@@ -11,6 +11,7 @@ class CsvWriter extends Actor {
 
   val f = new File("out.csv")
 
+
   override def receive: Receive = {
     case sp: SensorProbe =>
       val writer = CSVWriter.open(f, append = true)
