@@ -1,10 +1,10 @@
 package sleepless.gather
 
-import java.util.UUID
-
+import collection.JavaConversions._
 import akka.actor.{ActorSystem, Props, Actor}
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.scaladsl.{Sink, Source}
+import com.typesafe.config.ConfigFactory
 import sleepless.gather.sources.vk_api.{VkApiResponse, Users, VkApiRequest, VkApiPipeline}
 import sleepless.gather.sources.vk_http.{VkUserId, VkHttpSupervisor}
 import spray.json.JsString
@@ -15,6 +15,8 @@ object Sleepless extends App {
     implicit val materializer = ActorMaterializer()
     import system.dispatcher
 
+    val conf = ConfigFactory.load()
+
     val users = Seq("dm", "kate_clapp", "daniilova_anya", "adam_moran").map(VkUserId)
 
     val vkSupervisor = system.actorOf(VkHttpSupervisor.props)
@@ -23,15 +25,15 @@ object Sleepless extends App {
 
     val consoleWriter = system.actorOf(ConsoleWriter.props)
 
-    val accessTokens = Set("")
+    val accessTokens = conf.getStringList("access_tokens").toSet
 
     val eventStreamSource = Source.actorRef(1000, OverflowStrategy.dropNew)
 
     val eventStreamSink = Sink.foreach(system.eventStream.publish)
 
-    val actor = VkApiPipeline.createNew(accessTokens, eventStreamSource, eventStreamSink, eventStreamSink).run()
+    val pipelineInputActor = VkApiPipeline.createNew(accessTokens, eventStreamSource, eventStreamSink, eventStreamSink).run()
 
-    system.eventStream.subscribe(actor, classOf[VkApiRequest])
+    system.eventStream.subscribe(pipelineInputActor, classOf[VkApiRequest])
 
     users.foreach(vkSupervisor ! VkHttpSupervisor.Commands.AddNewUser(_))
 

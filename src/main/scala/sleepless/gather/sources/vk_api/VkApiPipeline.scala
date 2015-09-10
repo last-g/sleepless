@@ -16,6 +16,8 @@ import scala.util.{Success, Try}
 
 object VkApiPipeline {
 
+    private val httpPool = Http().superPool[ResponseId]()
+
     def createNew[In](accessTokens: Set[String],
               source: Source[VkApiRequest, In],
               sink: Sink[VkApiResponse, Any],
@@ -42,8 +44,6 @@ object VkApiPipeline {
                     (zip.in0, zip.out)
                 }.map(_._1)
             }
-
-            val httpPool = Http().superPool[ResponseId]()
 
             val singleVkRequestToHttpRequest: Flow[VkApiRequest, (HttpRequest, ResponseId), Unit] =
                 Flow[VkApiRequest].map { request =>
